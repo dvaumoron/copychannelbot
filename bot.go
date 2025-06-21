@@ -32,7 +32,9 @@ func main() {
 
 	guildId := config.Require("GUILD_ID")
 	srcChannelName := config.Require("SRC_CHANNEL")
-	destChannelName := config.Require("DEST_CHANNEL")
+	refreshRate := config.RequireInt("REFRESH_RATE")
+	port := config.RequireInt("PORT")
+	tmplPath := config.Get("TMPL_PATH")
 
 	session, err := discordgo.New("Bot " + config.Require("BOT_TOKEN"))
 	if err != nil {
@@ -52,35 +54,33 @@ func main() {
 	}
 
 	srcChannelId := ""
-	destChannelId := ""
 	for _, channel := range guildChannels {
-		switch channel.Name {
-		case srcChannelName:
+		if channel.Name == srcChannelName {
 			srcChannelId = channel.ID
-		case destChannelName:
-			destChannelId = channel.ID
+			break
 		}
 	}
 
-	switch {
-	case srcChannelId == "":
+	if srcChannelId == "" {
 		panic("Cannot retrieve the guild channel for source : " + srcChannelName)
-	case destChannelId == "":
-		panic("Cannot retrieve the guild channel for destination : " + destChannelName)
 	}
 	// for GC cleaning
 	guildChannels = nil
 	srcChannelName = ""
-	destChannelName = ""
+
+	msgChan := make(chan string, 16)
 
 	session.AddHandler(func(s *discordgo.Session, u *discordgo.MessageCreate) {
 		if u.ChannelID == srcChannelId {
-			session.ChannelMessageSend(destChannelId, u.Content)
+			msgChan <- u.Content
 		}
 	})
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
+
+	go startDisplayServer(msgChan, port, refreshRate, tmplPath)
+
 	log.Println("Started successfully")
 	fmt.Println("Press Ctrl+C to exit")
 	<-stop

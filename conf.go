@@ -24,7 +24,7 @@ import (
 	"os"
 	"path"
 
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -56,10 +56,23 @@ func (c Config) Get(valueConfName string) string {
 	return value
 }
 
+func (c Config) GetInt(valueConfName string) int64 {
+	value, _ := c.data[valueConfName].(int64)
+	return value
+}
+
 func (c Config) Require(valueConfName string) string {
 	value := c.Get(valueConfName)
 	if value == "" {
 		panic("Configuration value is missing : " + valueConfName)
+	}
+	return value
+}
+
+func (c Config) RequireInt(valueConfName string) int64 {
+	value, ok := c.data[valueConfName].(int64)
+	if !ok {
+		panic("Configuration value is missing or incorrect : " + valueConfName)
 	}
 	return value
 }
