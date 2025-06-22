@@ -52,10 +52,10 @@ func (c *msgCacheHandler) CleanOldMessages() {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	recentIndex := 0
+	recentIndex := len(c.messages)
 	for i, dm := range c.messages {
-		recentIndex = i
 		if time.Since(dm.timestamp) < c.messageDuration {
+			recentIndex = i
 			break
 		}
 	}
