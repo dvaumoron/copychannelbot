@@ -85,10 +85,6 @@ func startDisplayServer(msgChan <-chan string, conf *Config) {
 }
 
 func convertPort(port int) string {
-	if port <= 0 || port > 65535 {
-		return ":8080"
-	}
-
 	return ":" + strconv.Itoa(port)
 }
 
