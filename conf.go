@@ -22,17 +22,21 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 
 	yaml "gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	basePath string
-	data     map[string]any
+	botToken       string `yaml:"BOT_TOKEN"`
+	guildId        string `yaml:"GUILD_ID"`
+	srcChannelName string `yaml:"SRC_CHANNEL"`
+	refreshRate    int    `yaml:"REFRESH_RATE"`
+	port           int    `yaml:"PORT"`
+	tmplPath       string `yaml:"TMPL_PATH"`
+	cutUntil       string `yaml:"CUT_UNTIL"`
 }
 
-func ReadConfig() Config {
+func ReadConfig() *Config {
 	confPath := "bot.yaml"
 	if len(os.Args) > 1 {
 		confPath = os.Args[1]
@@ -44,35 +48,29 @@ func ReadConfig() Config {
 		panic(fmt.Sprint("Unable to read configuration :", err))
 	}
 
-	confData := map[string]any{}
-	if err = yaml.Unmarshal(confBody, confData); err != nil {
+	var conf Config
+	if err = yaml.Unmarshal(confBody, &conf); err != nil {
 		panic(fmt.Sprint("Unable to parse configuration :", err))
 	}
-	return Config{basePath: path.Dir(confPath), data: confData}
+
+	conf.validate()
+
+	return &conf
 }
 
-func (c Config) Get(valueConfName string) string {
-	value, _ := c.data[valueConfName].(string)
-	return value
-}
-
-func (c Config) GetInt(valueConfName string) int {
-	value, _ := c.data[valueConfName].(int)
-	return value
-}
-
-func (c Config) Require(valueConfName string) string {
-	value := c.Get(valueConfName)
-	if value == "" {
-		panic("Configuration value is missing : " + valueConfName)
+func (c *Config) validate() {
+	switch {
+	case c.botToken == "":
+		panic("Configuration value is missing : BOT_TOKEN")
+	case c.guildId == "":
+		panic("Configuration value is missing : GUILD_ID")
+	case c.srcChannelName == "":
+		panic("Configuration value is missing : SRC_CHANNEL")
+	case c.refreshRate <= 0:
+		panic("Configuration value is missing or incorrect : REFRESH_RATE")
+	case c.port <= 0 || c.port > 65535:
+		panic("Configuration value is missing or incorrect : PORT")
+	case c.tmplPath == "":
+		panic("Configuration value is missing : TMPL_PATH")
 	}
-	return value
-}
-
-func (c Config) RequireInt(valueConfName string) int {
-	value, ok := c.data[valueConfName].(int)
-	if !ok {
-		panic("Configuration value is missing or incorrect : " + valueConfName)
-	}
-	return value
 }

@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -16,16 +17,18 @@ type datedMessage struct {
 }
 
 type msgCacheHandler struct {
-	messages        []datedMessage
+	messages []datedMessage
+	mutex    sync.RWMutex
+
 	messageDuration time.Duration
-	mutex           sync.RWMutex
+	messageFilter   func(string) string
 	tmpl            *template.Template
 }
 
 func (c *msgCacheHandler) Receive(msgChan <-chan string) {
 	for msg := range msgChan {
 		datedMsg := datedMessage{
-			message:   msg,
+			message:   c.messageFilter(msg),
 			timestamp: time.Now(),
 		}
 
@@ -49,12 +52,13 @@ func (c *msgCacheHandler) GetCurrentMessages() []string {
 }
 
 func (c *msgCacheHandler) CleanOldMessages() {
+	now := time.Now()
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	recentIndex := len(c.messages)
+	recentIndex := len(c.messages) // when no messages are recent, clean all
 	for i, dm := range c.messages {
-		if time.Since(dm.timestamp) < c.messageDuration {
+		if now.Sub(dm.timestamp) < c.messageDuration {
 			recentIndex = i
 			break
 		}
@@ -66,17 +70,18 @@ func (c *msgCacheHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c.tmpl.Execute(w, c.GetCurrentMessages())
 }
 
-func startDisplayServer(msgChan <-chan string, port int, refreshRate int, tmplPath string) {
+func startDisplayServer(msgChan <-chan string, conf *Config) {
 	cache := msgCacheHandler{
-		messageDuration: time.Duration(refreshRate) * time.Second,
-		tmpl:            template.Must(template.ParseFiles(tmplPath)),
+		messageDuration: time.Duration(conf.refreshRate) * time.Second,
+		messageFilter:   filterFromConf(conf),
+		tmpl:            template.Must(template.ParseFiles(conf.tmplPath)),
 	}
 
 	go cache.Receive(msgChan)
 
 	http.Handle("/", &cache)
 
-	http.ListenAndServe(convertPort(port), nil)
+	http.ListenAndServe(convertPort(conf.port), nil)
 }
 
 func convertPort(port int) string {
@@ -85,4 +90,22 @@ func convertPort(port int) string {
 	}
 
 	return ":" + strconv.Itoa(port)
+}
+
+func filterFromConf(conf *Config) func(string) string {
+	if conf.cutUntil == "" {
+		return noFilter
+	}
+
+	cutUntil := conf.cutUntil
+	return func(msg string) string {
+		if _, after, found := strings.Cut(msg, cutUntil); found {
+			return after
+		}
+		return msg
+	}
+}
+
+func noFilter(msg string) string {
+	return msg
 }

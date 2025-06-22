@@ -28,15 +28,9 @@ import (
 )
 
 func main() {
-	config := ReadConfig()
+	conf := ReadConfig()
 
-	guildId := config.Require("GUILD_ID")
-	srcChannelName := config.Require("SRC_CHANNEL")
-	refreshRate := config.RequireInt("REFRESH_RATE")
-	port := config.RequireInt("PORT")
-	tmplPath := config.Get("TMPL_PATH")
-
-	session, err := discordgo.New("Bot " + config.Require("BOT_TOKEN"))
+	session, err := discordgo.New("Bot " + conf.botToken)
 	if err != nil {
 		panic(fmt.Sprint("Cannot create the bot :", err))
 	}
@@ -48,25 +42,24 @@ func main() {
 	}
 	defer session.Close()
 
-	guildChannels, err := session.GuildChannels(guildId)
+	guildChannels, err := session.GuildChannels(conf.guildId)
 	if err != nil {
 		panic(fmt.Sprint("Cannot retrieve the guild channels :", err))
 	}
 
 	srcChannelId := ""
 	for _, channel := range guildChannels {
-		if channel.Name == srcChannelName {
+		if channel.Name == conf.srcChannelName {
 			srcChannelId = channel.ID
 			break
 		}
 	}
 
 	if srcChannelId == "" {
-		panic("Cannot retrieve the guild channel for source : " + srcChannelName)
+		panic("Cannot retrieve the guild channel for source : " + conf.srcChannelName)
 	}
 	// for GC cleaning
 	guildChannels = nil
-	srcChannelName = ""
 
 	msgChan := make(chan string, 16)
 
@@ -79,7 +72,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 
-	go startDisplayServer(msgChan, port, refreshRate, tmplPath)
+	go startDisplayServer(msgChan, conf)
 
 	log.Println("Started successfully")
 	fmt.Println("Press Ctrl+C to exit")

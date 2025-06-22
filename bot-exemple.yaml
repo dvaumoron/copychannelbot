@@ -4,3 +4,4 @@ SRC_CHANNEL: ""
 PORT: 8080
 REFRESH_RATE: 3 # in seconds
 TMPL_PATH: "index.tmpl"
+CUT_UNTIL: ":"
