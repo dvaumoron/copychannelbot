@@ -66,7 +66,7 @@ func (c *msgCacheHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c.tmpl.Execute(w, c.GetCurrentMessages())
 }
 
-func startDisplayServer(msgChan <-chan string, port int64, refreshRate int64, tmplPath string) {
+func startDisplayServer(msgChan <-chan string, port int, refreshRate int, tmplPath string) {
 	cache := msgCacheHandler{
 		messageDuration: time.Duration(refreshRate) * time.Second,
 		tmpl:            template.Must(template.ParseFiles(tmplPath)),
@@ -79,10 +79,10 @@ func startDisplayServer(msgChan <-chan string, port int64, refreshRate int64, tm
 	http.ListenAndServe(convertPort(port), nil)
 }
 
-func convertPort(port int64) string {
+func convertPort(port int) string {
 	if port <= 0 || port > 65535 {
 		return ":8080"
 	}
 
-	return ":" + strconv.FormatInt(port, 10)
+	return ":" + strconv.Itoa(port)
 }

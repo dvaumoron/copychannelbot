@@ -69,8 +69,8 @@ func (c Config) Require(valueConfName string) string {
 	return value
 }
 
-func (c Config) RequireInt(valueConfName string) int64 {
-	value, ok := c.data[valueConfName].(int64)
+func (c Config) RequireInt(valueConfName string) int {
+	value, ok := c.data[valueConfName].(int)
 	if !ok {
 		panic("Configuration value is missing or incorrect : " + valueConfName)
 	}
