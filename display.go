@@ -71,15 +71,15 @@ func (c *msgCacheHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func startDisplayServer(msgChan <-chan string, conf *Config) {
-	cache := msgCacheHandler{
+	msgHandler := msgCacheHandler{
 		messageDuration: time.Duration(conf.refreshRate) * time.Second,
 		messageFilter:   filterFromConf(conf),
 		tmpl:            template.Must(template.ParseFiles(conf.tmplPath)),
 	}
 
-	go cache.Receive(msgChan)
+	go msgHandler.Receive(msgChan)
 
-	http.Handle("/", &cache)
+	http.Handle("/", &msgHandler)
 
 	http.ListenAndServe(convertPort(conf.port), nil)
 }
