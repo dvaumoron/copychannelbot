@@ -45,8 +45,8 @@ func (c *msgCacheHandler) GetCurrentMessages() []string {
 	defer c.mutex.RUnlock()
 
 	res := make([]string, len(c.messages))
-	for _, dm := range c.messages {
-		res = append(res, dm.message)
+	for i, dm := range c.messages {
+		res[i] = dm.message
 	}
 	return res
 }
