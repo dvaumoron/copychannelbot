@@ -89,11 +89,11 @@ func convertPort(port int) string {
 }
 
 func filterFromConf(conf *Config) func(string) string {
-	if conf.cutUntil == "" {
+	cutUntil := conf.cutUntil
+	if cutUntil == "" {
 		return noFilter
 	}
 
-	cutUntil := conf.cutUntil
 	return func(msg string) string {
 		if _, after, found := strings.Cut(msg, cutUntil); found {
 			return after
