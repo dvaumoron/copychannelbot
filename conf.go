@@ -56,8 +56,8 @@ func (c Config) Get(valueConfName string) string {
 	return value
 }
 
-func (c Config) GetInt(valueConfName string) int64 {
-	value, _ := c.data[valueConfName].(int64)
+func (c Config) GetInt(valueConfName string) int {
+	value, _ := c.data[valueConfName].(int)
 	return value
 }
 
